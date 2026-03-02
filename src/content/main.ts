@@ -1,4 +1,5 @@
 import { captureSelection, type SelectionHandle } from "./editor";
+import { formatLatex } from "./latex-format";
 import { hidePopup, showError, showPopup, type PopupAction } from "./popup";
 import { evalLatex, getPyodide } from "./pyodide-runner";
 
@@ -39,15 +40,7 @@ function onMouseUp(e: MouseEvent) {
 
 function onKeyUp(e: KeyboardEvent) {
   // Only react to selection-extending keys
-  const selectionKeys = [
-    "Shift",
-    "ArrowLeft",
-    "ArrowRight",
-    "ArrowUp",
-    "ArrowDown",
-    "Home",
-    "End",
-  ];
+  const selectionKeys = ["Shift", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"];
   if (selectionKeys.includes(e.key)) {
     setTimeout(checkSelection, 50);
   }
@@ -63,10 +56,7 @@ function checkSelection() {
     return;
   }
 
-  console.log(
-    "[linal] Selection text:",
-    JSON.stringify(handle.text.slice(0, 120)),
-  );
+  console.log("[linal] Selection text:", JSON.stringify(handle.text.slice(0, 120)));
   console.log("[linal] Rect:", handle.rect);
 
   if (!LATEX_RE.test(handle.text)) {
@@ -109,7 +99,14 @@ async function handleAction(action: PopupAction) {
     let result: string;
 
     if (action === "eval") {
-      result = " = " + (await evalLatex(handle.text));
+      const raw = await evalLatex(handle.text);
+      let formatted = raw;
+      try {
+        formatted = (await formatLatex(raw)).trimEnd();
+      } catch {
+        // If prettier can't parse it (e.g. raw math snippets), use as-is
+      }
+      result = " = " + formatted;
     } else {
       throw new Error(`Unknown action: ${action}`);
     }
