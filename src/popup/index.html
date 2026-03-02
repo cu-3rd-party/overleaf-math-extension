@@ -1,10 +1,153 @@
 <!doctype html>
-<html lang="en">
+<html lang="ru">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Linal — как пользоваться</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "Segoe UI", system-ui, sans-serif;
+        font-size: 13px;
+        background: #1e1e2e;
+        color: #cdd6f4;
+        width: 300px;
+        padding: 14px;
+        line-height: 1.55;
+      }
+
+      h1 {
+        font-size: 13px;
+        font-weight: 700;
+        color: #89b4fa;
+        margin-bottom: 10px;
+      }
+
+      .block {
+        background: #181825;
+        border: 1px solid #313244;
+        border-radius: 8px;
+        padding: 10px 12px;
+        margin-bottom: 8px;
+      }
+
+      .block-title {
+        font-size: 11px;
+        font-weight: 600;
+        color: #a6e3a1;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 6px;
+      }
+
+      .step {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 3px;
+      }
+      .num {
+        color: #89b4fa;
+        font-weight: 700;
+        min-width: 14px;
+      }
+
+      .ops {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-top: 2px;
+      }
+
+      .op-code {
+        font-family: "JetBrains Mono", "Fira Code", monospace;
+        font-size: 11px;
+        color: #f38ba8;
+      }
+
+      .op-desc {
+        font-size: 12px;
+        color: #bac2de;
+        margin-top: 1px;
+      }
+
+      .note {
+        color: #6c7086;
+        font-size: 11px;
+        margin-top: 6px;
+      }
+    </style>
   </head>
   <body>
-    <div id="app"></div>
-    <script type="module" src="./main.js"></script>
+    <h1>Linal — Overleaf Matrix Helper</h1>
+
+    <div class="block">
+      <div class="block-title">Как использовать</div>
+      <div class="step">
+        <span class="num">1.</span
+        ><span>Выдели LaTeX-выражение в Overleaf</span>
+      </div>
+      <div class="step">
+        <span class="num">2.</span
+        ><span>В появившемся попапе нажми <b>Evaluate</b></span>
+      </div>
+      <div class="step">
+        <span class="num">3.</span
+        ><span>Результат вставится сразу после выделения</span>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-title">Что поддерживается</div>
+      <div class="ops">
+        <div>
+          <div class="op-code">\frac{a}{b}</div>
+          <div class="op-desc">Дробь / деление</div>
+        </div>
+        <div>
+          <div class="op-code">\cdot, \times</div>
+          <div class="op-desc">Умножение</div>
+        </div>
+        <div>
+          <div class="op-code">^{n}</div>
+          <div class="op-desc">Степень</div>
+        </div>
+        <div>
+          <div class="op-code">\sqrt{x}</div>
+          <div class="op-desc">Квадратный корень</div>
+        </div>
+        <div>
+          <div class="op-code">\sum, \prod</div>
+          <div class="op-desc">Сумма, произведение</div>
+        </div>
+        <div>
+          <div class="op-code">\det, \text{tr}</div>
+          <div class="op-desc">Определитель, след матрицы</div>
+        </div>
+        <div>
+          <div class="op-code">\begin{pmatrix}…\end{pmatrix}</div>
+          <div class="op-desc">Матрица</div>
+        </div>
+        <div>
+          <div class="op-code">\sin, \cos, \ln, \exp</div>
+          <div class="op-desc">Стандартные функции</div>
+        </div>
+        <div>
+          <div class="op-code">\int_a^b f\,dx</div>
+          <div class="op-desc">Интеграл</div>
+        </div>
+        <div>
+          <div class="op-code">\lim_{x\to a}</div>
+          <div class="op-desc">Предел</div>
+        </div>
+      </div>
+      <p class="note">
+        Вычисление через SymPy — упрощает, раскрывает, считает численно.
+      </p>
+    </div>
   </body>
 </html>

@@ -305,12 +305,13 @@ det_matrix: CMD_BEGIN_VMATRIX matrix_body CMD_END_VMATRIX _MATRIX_ENV_END
 
 // ======== Matrices functions ========
 
-_matrix_functions: determinant | trace | adjugate | rref | unitvec | gradient | hessian | jacobian | taylor
+_matrix_functions: determinant | trace | adjugate | rref | gauss | unitvec | gradient | hessian | jacobian | taylor
 
 determinant: _func_template{_FUNC_MATRIX_DETERMINANT}
 trace: _func_template{_FUNC_MATRIX_TRACE}
 adjugate: _func_template{_FUNC_MATRIX_ADJUGATE}
 rref: _func_template{_FUNC_MATRIX_RREF}
+gauss: _func_template{_FUNC_MATRIX_GAUSS}
 unitvec: _func_template{_FUNC_VEC_UNIT}
 
 gradient: _func_template{_FUNC_GRADIENT}
@@ -541,6 +542,7 @@ _FUNC_MATRIX_DETERMINANT: "\\det"
 _FUNC_MATRIX_TRACE: /\\[Tt]r(ace)?/
 _FUNC_MATRIX_ADJUGATE: CMD_OPERATOR _WS? _L_BRACE _WS? "adjugate" _WS? _R_BRACE
 _FUNC_MATRIX_RREF: CMD_OPERATOR _WS? _L_BRACE _WS? "rref" _WS? _R_BRACE
+_FUNC_MATRIX_GAUSS: CMD_OPERATOR _WS? _L_BRACE _WS? "gauss" _WS? _R_BRACE
 // this needs to have priority, so \vectorunit is not parsed as the symbol \vec{torunit}
 _FUNC_VEC_UNIT:  /\\v(ectorunit|u)\*?/
 

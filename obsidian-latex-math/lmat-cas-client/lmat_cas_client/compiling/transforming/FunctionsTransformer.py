@@ -281,6 +281,11 @@ class BuiltInFunctionsTransformer(UndefinedAtomsTransformer):
             MatrixUtils.ensure_matrix(mat).rref()[0], exponent
         )
 
+    def gauss(self, exponent: Expr | None, mat: Expr) -> Expr:
+        return self._try_raise_exponent(
+            MatrixUtils.ensure_matrix(mat).echelon_form(), exponent
+        )
+
     def unitvec(self, exponent: Expr | None, vector: Expr) -> Expr:
         return self._try_raise_exponent(
             MatrixUtils.ensure_matrix(vector).normalized(), exponent
