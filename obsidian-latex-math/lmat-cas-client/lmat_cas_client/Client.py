@@ -1,0 +1,175 @@
+import asyncio
+import ctypes
+import sys
+import traceback
+from threading import Thread
+from typing import *
+
+import jsonpickle
+import websockets
+
+from lmat_cas_client.command_handlers.CommandHandler import CommandHandler
+
+
+class ThreadKill(Exception):
+    pass
+
+
+class KillableThread(Thread):
+    def kill(self):
+        ctypes.pythonapi.PyThreadState_SetAsyncExc(
+            ctypes.c_long(self.ident), ctypes.py_object(ThreadKill)
+        )
+
+
+class HandlerError(Exception):
+    pass
+
+
+#
+# The LmatCasClient class manages a connection and message parsing + encoding between an active Latex Math plugin.
+# The connection works based on 'handle keys', which act like message types.
+# A handle key is simply a string indicating what sort of data is sent as the payload, and how it should be handled.
+# The payload is always a json object decoded into a python object.
+#
+# Each handle key has a handler registered, which is called with the received payload.
+#
+class LmatCasClient:
+    SUCCESS_STATUS = "success"
+    ERR_STATUS = "error"
+    INTERRUPT_STATUS = "interrupted"
+
+    def __init__(self):
+        self.command_handlers: dict[str, CommandHandler] = {}
+        self.command_handler_threads: dict[str, Thread] = {}
+
+        self.pending_message_responses: set[str] = set()
+
+        self.connection = None
+
+    # Connect to a Latex Math plugin currently hosting on the local host at the given port.
+    async def connect(self, port: int):
+        self.connection = await websockets.connect(f"ws://localhost:{port}")
+
+    # Register a message handler.
+    def register_handler(self, handler_key: str, handler_factory: CommandHandler):
+        self.command_handlers[handler_key] = handler_factory
+
+    # Start the message loop, this is required to run, before any handlers will be called.
+    async def run_message_loop(self):
+        while True:
+            try:
+                message = jsonpickle.decode(await self.connection.recv())
+
+                uid = message["uid"]
+                message_type = message["type"]
+                payload = message["payload"]
+
+                self.pending_message_responses.add(uid)
+
+                match message_type:
+                    case "exit":
+                        await self._respond_success(uid, "exit", {})
+                        break
+                    case "start":
+                        await self._start_handler(payload, uid)
+                    case "interrupt":
+                        await self._interrupt_handler(payload["target_uids"], uid)
+                    case _:
+                        # If we get here in a release build, then either the cas client or the plugin source is not the same version.
+                        # A plugin reinstall should (hopefully) install a cas client and plugin source with the same version.
+                        await self._respond_error(
+                            uid,
+                            dev_message=f"Unsupported message type: {message.type}",
+                            usr_message="Message type is not supported, please try reinstalling the plugin.",
+                        )
+            except Exception:
+                traceback.print_exc(file=sys.stderr)
+
+    async def _start_handler(self, payload: dict, uid: str):
+        if payload["command_type"] not in self.command_handlers:
+            await self._respond_error(
+                uid,
+                dev_message=f"Unsupported command type: {payload['command_type']}",
+                usr_message="Command type is not supported, please try reinstalling the plugin.",
+            )
+            return
+
+        self.command_handler_threads[uid] = KillableThread(
+            target=self._async_target,
+            args=(
+                uid,
+                self._handle_command,
+                payload["command_type"],
+                uid,
+                payload["start_args"],
+            ),
+            daemon=True,
+        )
+
+        self.command_handler_threads[uid].start()
+
+    async def _handle_command(self, command: str, uid: str, payload: dict):
+        command_response = self.command_handlers[command].handle(payload)
+        response_type, response_value = command_response.getResponsePayload()
+        await self._respond_success(uid, response_type, response_value)
+
+    async def _interrupt_handler(self, target_uids: list[str], uid: str):
+        for target_uid in target_uids:
+            if target_uid in self.command_handler_threads:
+                # we make sure to send the interrupt response before the
+                # target handler has an opportunity to respond with an error
+                # from us interrupting it.
+                await self._respond_interrupt(target_uid)
+
+                self.command_handler_threads[target_uid].kill()
+
+        await self._respond_success(uid, "result", dict())
+
+    def _async_target(self, uid, coro, *args, **kwargs):
+        async def coro_err_handler():
+            try:
+                await coro(*args, **kwargs)
+            except Exception as e:
+                try:
+                    await self._respond_error(
+                        uid,
+                        dev_message=str(e) + "\n" + traceback.format_exc(),
+                        usr_message=str(e),
+                    )
+                except ValueError:
+                    # This error means the thread was intentionally interrupted,
+                    # so just do nothing instead of reporting back an error.
+                    pass
+
+            # remove thread from threads dict when handling has finished
+
+            del self.command_handler_threads[uid]
+
+        return asyncio.run(coro_err_handler())
+
+    # Send the given json dumpable object back to the plugin.
+    async def _respond(self, status: str, uid: str, message: dict):
+        if uid not in self.pending_message_responses:
+            raise ValueError(f"Response not pending for message with uid '{uid}'")
+
+        self.pending_message_responses.remove(uid)
+
+        await self.connection.send(
+            jsonpickle.encode(dict(status=status, uid=uid, payload=message))
+        )
+
+    async def _respond_success(self, uid: str, type: str, value: dict):
+        await self._respond(self.SUCCESS_STATUS, uid, dict(type=type, value=value))
+
+    async def _respond_interrupt(self, uid):
+        await self._respond(self.INTERRUPT_STATUS, uid, {})
+
+    async def _respond_error(
+        self, uid: str, dev_message: str, usr_message: str | None = None
+    ):
+        usr_message = dev_message if usr_message is None else usr_message
+
+        await self._respond(
+            self.ERR_STATUS, uid, dict(dev_message=dev_message, usr_message=usr_message)
+        )

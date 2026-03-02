@@ -1,0 +1,6 @@
+pytest~=8.3
+pytest-cov~=6.2
+pytest-xdist~=3.8
+pandas~=2.2
+tabulate~=0.9
+ruff~=0.12

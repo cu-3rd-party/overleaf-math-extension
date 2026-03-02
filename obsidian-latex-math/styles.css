@@ -1,0 +1,18 @@
+.cm-preview-code-block:hover .lmat-block-flair {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.lmat-block-container-flair {
+    overflow: auto;
+}
+
+.lmat-status-text {
+    margin-left: 5px;
+}
+
+.lmat-load-spin > * {
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin { 100% { transform: rotate(360deg); } }

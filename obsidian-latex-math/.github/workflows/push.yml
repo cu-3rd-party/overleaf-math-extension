@@ -1,0 +1,10 @@
+name: Push Changes To Repo
+
+on:
+  push:
+    branches:
+      - "*"
+
+jobs:
+  run-tests:
+    uses: ./.github/workflows/test.yml
