@@ -1,7 +1,21 @@
 import { captureSelection, type SelectionHandle } from "./editor";
 import { formatLatex } from "./latex-format";
-import { hidePopup, showError, showPopup, type PopupAction } from "./popup";
+import { hidePopup, showError, showPopup, type PopupAction, type WrapAction } from "./popup";
 import { evalLatex, getPyodide } from "./pyodide-runner";
+
+// ─── Wrap-action definitions ──────────────────────────────────────────────────
+// Each entry defines how to wrap the raw selected LaTeX before evaluating.
+// The result is then evaluated by SymPy and inserted as " = <result>".
+const WRAP_ACTIONS: Record<WrapAction, (sel: string) => string> = {
+  det: (sel) => `\\det${sel}`,
+  trace: (sel) => `\\Tr${sel}`,
+  inv: (sel) => `{${sel}}^{-1}`,
+  transpose: (sel) => `{${sel}}^{T}`,
+  adjoint: (sel) => `{${sel}}^{H}`,
+  adj: (sel) => `\\operatorname{adjugate}${sel}`,
+  rref: (sel) => `\\operatorname{rref}${sel}`,
+  gauss: (sel) => `\\operatorname{gauss}${sel}`,
+};
 
 // ─── Regex helpers ───────────────────────────────────────────────────────────
 
@@ -106,7 +120,19 @@ async function handleAction(action: PopupAction) {
       } catch {
         // If prettier can't parse it (e.g. raw math snippets), use as-is
       }
-      result = " = " + formatted;
+      result = "\n= " + formatted;
+    } else if (action in WRAP_ACTIONS) {
+      // Wrap the selection with the operation's LaTeX, then evaluate
+      const wrapFn = WRAP_ACTIONS[action as WrapAction];
+      const wrapped = wrapFn(handle.text);
+      const raw = await evalLatex(wrapped);
+      let formatted = raw;
+      try {
+        formatted = (await formatLatex(raw)).trimEnd();
+      } catch {
+        /* use raw if prettier can't parse */
+      }
+      result = "\n= " + formatted;
     } else {
       throw new Error(`Unknown action: ${action}`);
     }
