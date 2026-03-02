@@ -95,8 +95,8 @@ Offscreen document
 ## Сборка
 
 ```bash
-npm install
-npm run build   # результат в dist/
+bun install
+bun run build   # результат в dist/
 ```
 
 Загрузить `dist/` как распакованное расширение в Chrome: `chrome://extensions` → «Режим разработчика» → «Загрузить распакованное».
