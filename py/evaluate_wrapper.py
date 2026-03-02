@@ -69,11 +69,20 @@ def evaluate(latex: str) -> str:
     except Exception:
         pass
 
-    # 4. Simplify
+    # 4. If the result is already a LatexRaw (e.g. gauss with steps),
+    # skip simplify and return its string directly.
+    try:
+        from lmat_cas_client.compiling.transforming.LatexMatrix import LatexRaw
+        if isinstance(expr, LatexRaw):
+            return str(expr)
+    except Exception:
+        pass
+
+    # 5. Simplify
     try:
         result = sympy.simplify(expr.doit())
     except Exception as exc:
         raise ValueError(f"Evaluation error: {exc}") from exc
 
-    # 5. Convert back to LaTeX
+    # 6. Convert back to LaTeX
     return _printer.doprint(result)

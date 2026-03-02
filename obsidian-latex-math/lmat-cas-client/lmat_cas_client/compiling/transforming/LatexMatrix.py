@@ -2,6 +2,25 @@ from sympy import Matrix
 from sympy.core.sympify import converter
 
 
+class LatexRaw:
+    """
+    Wraps a pre-rendered LaTeX string as an opaque value.
+
+    Returned by operations (e.g. gauss with steps) that produce a full LaTeX
+    sequence rather than a single SymPy expression.  The evaluate_wrapper
+    detects this type and returns its string directly, bypassing simplify().
+    """
+
+    def __init__(self, latex_str: str):
+        self._latex_str = latex_str
+
+    def __str__(self) -> str:
+        return self._latex_str
+
+    def __repr__(self) -> str:
+        return f"LatexRaw({self._latex_str!r})"
+
+
 class LatexMatrix(Matrix):
     """
     The LatexMatrix class stores additional info about the eventual latex representation of a sympy matrix.

@@ -14,6 +14,7 @@ from lmat_cas_client.compiling.DefinitionStore import (
 from lmat_cas_client.compiling.transforming.UndefinedAtomsTransformer import (
     UndefinedAtomsTransformer,
 )
+from lmat_cas_client.compiling.transforming.LatexMatrix import LatexMatrix, LatexRaw
 from lmat_cas_client.math_lib import Functions, MatrixUtils
 from lmat_cas_client.math_lib.SymbolUtils import symbols_variable_order
 
@@ -282,9 +283,30 @@ class BuiltInFunctionsTransformer(UndefinedAtomsTransformer):
         )
 
     def gauss(self, exponent: Expr | None, mat: Expr) -> Expr:
-        return self._try_raise_exponent(
-            MatrixUtils.ensure_matrix(mat).echelon_form(), exponent
-        )
+        m = MatrixUtils.ensure_matrix(mat)
+        steps = MatrixUtils.gauss_with_steps(m)
+
+        # Determine the matrix environment to use (preserve the original env if possible)
+        env_begin = getattr(m, "env_begin", r"\begin{pmatrix}")
+        env_end = getattr(m, "env_end", r"\end{pmatrix}")
+
+        def _mat_latex(matrix):
+            rows_latex = []
+            for r in range(matrix.rows):
+                rows_latex.append(" & ".join(latex(matrix[r, c]) for c in range(matrix.cols)))
+            return env_begin + r" \\ ".join(rows_latex) + env_end
+
+        parts = []
+        first_mat = True
+        for op_label, state in steps:
+            if first_mat:
+                parts.append(_mat_latex(state))
+                first_mat = False
+            else:
+                parts.append(rf"\xrightarrow{{{op_label}}}")
+                parts.append(_mat_latex(state))
+
+        return LatexRaw(" ".join(parts))
 
     def unitvec(self, exponent: Expr | None, vector: Expr) -> Expr:
         return self._try_raise_exponent(
