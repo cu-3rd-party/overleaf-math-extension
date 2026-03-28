@@ -3,7 +3,7 @@ import pkg from "./package.json";
 
 export default defineManifest({
   manifest_version: 3,
-  name: "Linal — Overleaf Matrix Helper",
+  name: "Overleaf Math Extension",
   description:
     "Select LaTeX matrices in Overleaf to instantly compute products and more via SymPy.",
   version: pkg.version,
