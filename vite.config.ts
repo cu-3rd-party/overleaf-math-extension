@@ -2,7 +2,7 @@ import path from "node:path";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { crx } from "@crxjs/vite-plugin";
-import { defineConfig } from "vite";
+import { defineConfig, normalizePath } from "vite"; // <-- добавили normalizePath
 import { viteStaticCopy } from "vite-plugin-static-copy";
 import zip from "vite-plugin-zip-pack";
 import manifest from "./manifest.config.js";
@@ -10,7 +10,7 @@ import { name, version } from "./package.json";
 
 // Copy Pyodide runtime files (wasm, js, stdlib) — but NOT .whl packages
 // (those are bundled separately in public/pyodide-packages/).
-const PYODIDE_EXCLUDE = [
+const PYODIDE_EXCLUDE =[
   "!**/*.{md,html}",
   "!**/*.d.ts",
   "!**/*.whl",
@@ -20,9 +20,10 @@ const PYODIDE_EXCLUDE = [
 function viteStaticCopyPyodide() {
   const pyodideDir = dirname(fileURLToPath(import.meta.resolve("pyodide")));
   return viteStaticCopy({
-    targets: [
+    targets:[
       {
-        src: [join(pyodideDir, "*"), ...PYODIDE_EXCLUDE],
+        // <-- обернули join() в normalizePath()
+        src:[normalizePath(join(pyodideDir, "*")), ...PYODIDE_EXCLUDE],
         dest: "assets",
       },
     ],
@@ -32,7 +33,7 @@ function viteStaticCopyPyodide() {
 // so the offscreen document can mount them into Pyodide's virtual FS at runtime.
 function viteStaticCopyPython() {
   return viteStaticCopy({
-    targets: [
+    targets:[
       {
         // Produces: python/lmat_cas_client/**
         src: "obsidian-latex-math/lmat-cas-client/lmat_cas_client",
@@ -61,7 +62,7 @@ export default defineConfig({
       },
     },
   },
-  plugins: [
+  plugins:[
     crx({ manifest }),
     viteStaticCopyPyodide(),
     viteStaticCopyPython(),
